@@ -89,3 +89,49 @@ function cssBundler(sourceDir, targetFile) {
 }
 
 cssBundler(sourceStyleDir, styleBundle);
+
+let template = '';
+const templatePath = path.join(__dirname, "template.html"); //  не собраный макет
+const componentsDir = path.join(__dirname, "components"); //  папка с компонентами source
+const htmlPath = path.join(dirPath, "index.html");
+
+
+function createLayout(doctype, source, targetHtml) {
+    fs.readFile(doctype, "utf-8", (err, data) => {
+        if (err) throw err;
+        template = data;
+    })
+    
+    fs.readdir(source, (dirErr, dirFiles) => {
+        if (dirErr) throw dirErr;
+        let componentsCount = 0;
+    
+        dirFiles.forEach(component => {
+            const componentPath = path.join(source, component);
+    
+            fs.stat(componentPath, (err, compStats) => {
+                const compName = path.parse(component).name.trim();
+
+                if (compStats.isFile()) {
+
+                    fs.readFile(componentPath, "utf-8", (errData, compData) => {
+                        if (errData) throw errData;
+                        template = template.replace(`{{${compName}}}`, compData);
+                        componentsCount++;
+
+                        if (componentsCount === dirFiles.length) {
+                            
+                            fs.writeFile(targetHtml, template, (err) => {
+                                if (err) throw err;
+                            })
+                        }
+                    });
+                } else {
+                    componentsCount++;
+                }
+            });
+        });
+    });
+};
+
+createLayout(templatePath, componentsDir, htmlPath);
